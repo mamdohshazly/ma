@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل وإرسال صوت</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🟢 القسم الرئيسي -->
+  <div id="main-section">
+    <h2>تسجيل صوت وإرساله بالبريد</h2>
+
+    <label>اسم الملف:</label><br>
+    <input type="text" id="filename" placeholder="مثال: my_audio"><br><br>
+
+    <label>اسمك:</label><br>
+    <input type="text" id="senderName" placeholder="اسمك"><br><br>
+
+    <label>البريد الإلكتروني للمستلم:</label><br>
+    <input type="email" id="receiverEmail" placeholder="user@example.com"><br><br>
+
+    <button id="recordBtn">🎤 بدء التسجيل</button>
+    <button id="stopBtn" disabled>⏹️ إيقاف</button>
+    <button id="sendBtn" disabled>📤 إرسال</button>
+
+    <br><br>
+    <audio id="audio" controls></audio>
+  </div>
+
+  <!-- 🔵 القسم الفرعي: تشغيل وتحميل -->
+  <div id="play-section" class="hidden">
+    <h2>✅ تم رفع الملف وتشغيله:</h2>
+    <audio id="playAudio" controls style="width: 100%; max-width: 500px;"></audio>
+    <br><br>
+    <button id="downloadBtn">📥 تحميل الملف</button>
+  </div>
+
+  <script>
+    // 🧩 إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBhUtM-jMEyXcFGGqkg7NurScbj6yi3wjc",
+      authDomain: "mamdoh-bc9a5.firebaseapp.com",
+      projectId: "mamdoh-bc9a5",
+      storageBucket: "mamdoh-bc9a5.appspot.com",
+      messagingSenderId: "176483558007",
+      appId: "1:176483558007:web:e9f17e0f62acd3231c5c72",
+      measurementId: "G-QHNX5N7GG1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+
+    // 📧 إعداد EmailJS
+    emailjs.init("74-zUyeR-o7zE76GL");
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioBlob;
+
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const audio = document.getElementById('audio');
+
+    recordBtn.onclick = async () => {
+      const filename = document.getElementById("filename").value.trim();
+      if (!filename) {
+        alert("يرجى إدخال اسم الملف أولاً.");
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        audio.src = URL.createObjectURL(audioBlob);
+        sendBtn.disabled = false;
+      };
+
+      mediaRecorder.start();
+      recordBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      recordBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    sendBtn.onclick = async () => {
+      const filename = document.getElementById("filename").value.trim();
+      const receiverEmail = document.getElementById("receiverEmail").value.trim();
+      const senderName = document.getElementById("senderName").value.trim();
+
+      if (!receiverEmail || !senderName) {
+        alert("يرجى إدخال اسمك وبريد المستلم.");
+        return;
+      }
+
+      try {
+        const storageRef = storage.ref().child(`audio/${filename}.webm`);
+        await storageRef.put(audioBlob);
+        const downloadURL = await storageRef.getDownloadURL();
+
+        // إرسال البريد
+        await emailjs.send("service_vlapjef", "template_p0wtlnj", {
+          to_email: receiverEmail,
+          file_link: downloadURL,
+          sender_name: senderName
+        });
+
+        alert("✅ تم الإرسال بنجاح!");
+
+        // إظهار قسم التشغيل
+        document.getElementById("main-section").classList.add("hidden");
+        const playSection = document.getElementById("play-section");
+        playSection.classList.remove("hidden");
+
+        // تشغيل الصوت
+        const playAudio = document.getElementById("playAudio");
+        playAudio.src = downloadURL;
+
+        // تحميل الصوت
+        const downloadBtn = document.getElementById("downloadBtn");
+        downloadBtn.onclick = () => {
+          const link = document.createElement("a");
+          link.href = downloadURL;
+          link.download = filename + ".webm";
+          link.click();
+        };
+
+      } catch (error) {
+        console.error("خطأ في الإرسال:", error);
+        alert("❌ حدث خطأ أثناء الإرسال.");
+      }
+    };
+  </script>
+</body>
+</html>

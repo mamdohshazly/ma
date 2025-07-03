@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LEARN WITH SHAZLY</title>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <style>
+    body {font-family: Arial, sans-serif; margin: 0; padding: 0 20px; background: #f9f9f9;}
+    header {display: flex; justify-content: space-between; align-items: center; background: #4CAF50; color: white; padding: 20px;}
+    header img {height: 60px;}
+    h1 {margin: 0;}
+    section {margin: 20px 0;}
+    select, input[type="number"], input[type="text"], button {
+      padding: 10px; margin: 5px 0; width: 100%; max-width: 400px; box-sizing: border-box;
+    }
+    #ayahs {margin-top: 20px;}
+    .ayah {
+      background: #e6f4ea; margin: 10px 0; padding: 15px; border-radius: 8px;
+      font-family: 'Amiri', serif; font-size: 28px; text-align: right;
+      cursor: pointer; transition: background 0.3s;
+    }
+    .ayah:hover {background: #d2e8d7;}
+    form {
+      background: #e6f4ea; padding: 20px; border-radius: 8px;
+      max-width: 500px; margin: 0 auto 40px auto;
+    }
+    form input, form button {
+      width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box;
+    }
+    form h2 {margin-top: 0;}
+    #status {margin-top: 10px;}
+    #loadingStatus {
+      font-weight: bold; color: green; margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LEARN WITH SHAZLY</h1>
+    <img src="logo-shazly.jpeg" alt="Logo" />
+  </header>
+
+  <section>
+    <h2>Select Surah and Ayahs</h2>
+    <select id="surahSelect">
+      <option value="">Loading Surahs...</option>
+    </select><br/>
+    <label>From Ayah:</label>
+    <input type="number" id="fromAyah" min="1" />
+    <label>To Ayah:</label>
+    <input type="number" id="toAyah" min="1" />
+    <button id="loadAyahs">Load Ayahs</button>
+    <p id="loadingStatus"></p>
+    <h3 id="selectedSurah"></h3>
+    <div id="ayahs"></div>
+  </section>
+
+  <section>
+    <form id="homeworkForm">
+      <h2>Homework Submission</h2>
+      <button type="button" onclick="window.open('https://vocaroo.com', '_blank')">Open Vocaroo</button>
+      <input type="text" id="name" placeholder="Your Name" required />
+      <input type="text" id="lesson" placeholder="Lesson Title / Assignment Number" required />
+      <input type="text" id="link" placeholder="Vocaroo Link" required />
+      <button type="submit">Submit Homework</button>
+      <div id="status"></div>
+    </form>
+  </section>
+
+  <script>
+    // Initialize EmailJS
+    emailjs.init("7vp8QHEsXGvFKskZm");
+
+    const surahSelect = document.getElementById('surahSelect');
+    surahSelect.innerHTML = '<option value="">Loading Surahs...</option>';
+
+    fetch('https://api.quran.com/v4/chapters?language=en')
+      .then(res => res.json())
+      .then(data => {
+        surahSelect.innerHTML = '<option value="">Select a Surah</option>';
+        data.chapters.forEach(ch => {
+          const option = document.createElement('option');
+          option.value = ch.id;
+          option.textContent = `${ch.id}. ${ch.name_simple}`;
+          surahSelect.appendChild(option);
+        });
+      })
+      .catch(err => {
+        surahSelect.innerHTML = '<option value="">Failed to load Surahs</option>';
+        console.error(err);
+      });
+
+    let currentAudio = null;
+
+    document.getElementById('loadAyahs').onclick = () => {
+      const surahId = surahSelect.value;
+      const from = parseInt(document.getElementById('fromAyah').value);
+      const to = parseInt(document.getElementById('toAyah').value);
+      const loadingStatus = document.getElementById('loadingStatus');
+
+      if (!surahId || !from || !to || from > to) {
+        alert('Please select a Surah and valid Ayah range.');
+        return;
+      }
+
+      loadingStatus.textContent = 'Loading Ayahs...';
+
+      fetch(`https://api.quran.com/v4/chapters/${surahId}?language=en`)
+        .then(res => res.json())
+        .then(ch => {
+          document.getElementById('selectedSurah').textContent = ch.chapter.name_simple;
+        });
+
+      // ✅ Use by_chapter with recitation=7
+      fetch(`https://api.quran.com/v4/verses/by_chapter/${surahId}?language=en&fields=text_uthmani,audio&recitation=7`)
+        .then(res => res.json())
+        .then(data => {
+          const ayahsDiv = document.getElementById('ayahs');
+          ayahsDiv.innerHTML = '';
+          const verses = data.verses.filter(v => v.verse_number >= from && v.verse_number <= to);
+          if (verses.length === 0) {
+            ayahsDiv.innerHTML = '<p>No Ayahs found for this range.</p>';
+          } else {
+            verses.forEach(v => {
+              const div = document.createElement('div');
+              div.className = 'ayah';
+              div.textContent = v.text_uthmani;
+              div.onclick = () => {
+                if (currentAudio) currentAudio.pause();
+                if (v.audio && v.audio.url) {
+                  currentAudio = new Audio(v.audio.url);
+                  currentAudio.play();
+                } else {
+                  alert('Audio not available for this Ayah.');
+                }
+              };
+              ayahsDiv.appendChild(div);
+            });
+          }
+          loadingStatus.textContent = '';
+        })
+        .catch(err => {
+          loadingStatus.textContent = 'Error loading Ayahs.';
+          console.error(err);
+        });
+    };
+
+    document.getElementById('homeworkForm').onsubmit = (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const lesson = document.getElementById('lesson').value.trim();
+      const link = document.getElementById('link').value.trim();
+      const status = document.getElementById('status');
+      if (!link.includes('voca.ro')) {
+        alert('Vocaroo link must contain voca.ro');
+        return;
+      }
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      const templateParams = {
+        name: name,
+        lesson: lesson,
+        link: link,
+        timestamp: new Date().toISOString()
+      };
+
+      emailjs.send('service_ctdnb2j', 'template_529538b', templateParams)
+        .then(() => {
+          status.textContent = 'Homework submitted successfully!';
+          btn.disabled = false;
+          btn.textContent = 'Submit Homework';
+          e.target.reset();
+        })
+        .catch(err => {
+          status.textContent = 'Error sending homework. Please try again.';
+          btn.disabled = false;
+          btn.textContent = 'Submit Homework';
+          console.error(err);
+        });
+    };
+  </script>
+</body>
+</html>
