@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Test Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #1a2a6c;
+            --secondary-color: #2c3e50;
+            --accent-color: #00CED1;
+            --text-color: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --header-bg: rgba(0, 0, 0, 0.3);
+            --score-bg: rgba(0, 0, 0, 0.4);
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+            --button-gradient: linear-gradient(135deg, #00BFFF, #1E90FF);
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: all 0.5s ease;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .theme-selector-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .palette-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .palette-title {
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            color: white;
+            font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .color-option.active {
+            border-color: white;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: var(--header-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #00BFFF, #1E90FF, var(--accent-color));
+        }
+        
+        h1 {
+            color: var(--accent-color);
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .score-summary {
+            background: var(--score-bg);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .score-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            background: var(--card-bg);
+            min-width: 200px;
+            flex: 1;
+        }
+        
+        .score-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+        
+        .score-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: var(--button-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin: 10px 0;
+        }
+        
+        .score-total {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .report-section {
+            background: var(--header-bg);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .section-title {
+            color: var(--accent-color);
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 206, 209, 0.5);
+            display: flex;
+            align-items: center;
+        }
+        
+        .report-question-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .report-question-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .report-question-item h3 {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .report-question-item h3 .question-number {
+            background: var(--accent-color);
+            color: var(--primary-color);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .options-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+        
+        .option-item {
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .option-item::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 6px;
+        }
+        
+        .option-item.correct {
+            background-color: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.4);
+        }
+        
+        .option-item.correct::before {
+            background: var(--correct-color);
+        }
+        
+        .option-item.wrong {
+            background-color: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+        }
+        
+        .option-item.wrong::before {
+            background: var(--wrong-color);
+        }
+        
+        .option-item.user-answer {
+            background-color: rgba(220, 53, 69, 0.3);
+            border: 2px solid var(--wrong-color);
+            transform: scale(1.02);
+        }
+        
+        .option-item.user-answer.correct {
+            background-color: rgba(40, 167, 69, 0.3);
+            border: 2px solid var(--correct-color);
+        }
+        
+        .option-mark {
+            font-size: 1.4rem;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .option-item.correct .option-mark {
+            background: var(--correct-color);
+            color: white;
+        }
+        
+        .option-item.wrong .option-mark {
+            background: var(--wrong-color);
+            color: white;
+        }
+        
+        .question-score {
+            font-size: 1.3rem;
+            margin-top: 15px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+        }
+        
+        .question-score.correct {
+            background: rgba(40, 167, 69, 0.2);
+            color: var(--correct-color);
+        }
+        
+        .question-score.wrong {
+            background: rgba(220, 53, 69, 0.2);
+            color: var(--wrong-color);
+        }
+        
+        .user-essay-answer {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+        
+        .feedback-box {
+            background: rgba(0, 206, 209, 0.1);
+            border: 1px solid rgba(0, 206, 209, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .feedback-box p {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .feedback-box i {
+            color: var(--accent-color);
+            font-size: 1.2rem;
+            margin-top: 3px;
+        }
+        
+        .btn-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .btn-home {
+            padding: 16px 45px;
+            background: var(--button-gradient);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .btn-home i {
+            font-size: 1.4rem;
+        }
+        
+        .btn-home:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #1E90FF, #00BFFF);
+        }
+
+        /* LTR Specific Styles */
+        html[dir="ltr"] .section-title i { margin-right: 15px; }
+        html[dir="ltr"] .report-question-item { border-left: 4px solid var(--accent-color); }
+        html[dir="ltr"] .report-question-item h3 .question-number { margin-right: 15px; }
+        html[dir="ltr"] .option-item::before { left: 0; }
+        html[dir="ltr"] .option-mark { margin-right: 15px; }
+        html[dir="ltr"] .user-essay-answer { border-left: 4px solid var(--accent-color); }
+        html[dir="ltr"] .feedback-box i { margin-right: 10px; }
+        html[dir="ltr"] .question-score i { margin-right: 10px; }
+        html[dir="ltr"] .btn-home i { margin-right: 10px; }
+
+        /* RTL Specific Styles (original) */
+        html[dir="rtl"] .section-title i { margin-left: 15px; }
+        html[dir="rtl"] .report-question-item { border-right: 4px solid var(--accent-color); }
+        html[dir="rtl"] .report-question-item h3 .question-number { margin-left: 15px; }
+        html[dir="rtl"] .option-item::before { right: 0; }
+        html[dir="rtl"] .option-mark { margin-left: 15px; }
+        html[dir="rtl"] .user-essay-answer { border-right: 4px solid var(--accent-color); }
+        html[dir="rtl"] .feedback-box i { margin-left: 10px; }
+        html[dir="rtl"] .question-score i { margin-left: 10px; }
+        html[dir="rtl"] .btn-home i { margin-left: 10px; }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            h1 { font-size: 2.5rem; }
+            .score-summary { flex-direction: column; }
+            .score-card { width: 100%; }
+            .section-title { font-size: 1.8rem; }
+            .report-question-item h3 { font-size: 1.5rem; }
+        }
+        
+        @media (max-width: 480px) {
+            h1 { font-size: 2rem; }
+            .score-value { font-size: 2.8rem; }
+            .report-section { padding: 20px 15px; }
+            .report-question-item { padding: 20px 15px; }
+            .btn-home { width: 100%; justify-content: center; }
+            .theme-selector-container { top: 10px; left: 10px; padding: 10px; gap: 10px; }
+            .color-option { width: 25px; height: 25px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Selector Container -->
+    <div class="theme-selector-container">
+        <div class="palette-group">
+            <h4 class="palette-title">Dark Themes</h4>
+            <div class="color-palette">
+                <div class="color-option active" style="background: #1a2a6c;" data-color="#1a2a6c" data-mode="dark"></div>
+                <div class="color-option" style="background: #2c003e;" data-color="#2c003e" data-mode="dark"></div>
+                <div class="color-option" style="background: #004d40;" data-color="#004d40" data-mode="dark"></div>
+                <div class="color-option" style="background: #8e2de2;" data-color="#8e2de2" data-mode="dark"></div>
+                <div class="color-option" style="background: #3a1c71;" data-color="#3a1c71" data-mode="dark"></div>
+                <div class="color-option" style="background: #0f2027;" data-color="#0f2027" data-mode="dark"></div>
+            </div>
+        </div>
+        <div class="palette-group">
+            <h4 class="palette-title">Light Themes</h4>
+            <div class="color-palette">
+                <div class="color-option" style="background: #e0eafc;" 
+                     data-primary="#e0eafc" data-secondary="#cfdef3" data-accent="#4e73df" data-text="#212529" data-mode="light"></div>
+                <div class="color-option" style="background: #e9f7f1;" 
+                     data-primary="#e9f7f1" data-secondary="#d4efdf" data-accent="#1abc9c" data-text="#143642" data-mode="light"></div>
+                <div class="color-option" style="background: #fde2e4;" 
+                     data-primary="#fde2e4" data-secondary="#fad2e1" data-accent="#d90429" data-text="#333" data-mode="light"></div>
+                <div class="color-option" style="background: #fefae0;" 
+                     data-primary="#fefae0" data-secondary="#faedcd" data-accent="#d4a373" data-text="#3a3a3a" data-mode="light"></div>
+                <div class="color-option" style="background: #e1e5f2;" 
+                     data-primary="#e1e5f2" data-secondary="#bfdbf7" data-accent="#1f7a8c" data-text="#023047" data-mode="light"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-alt"></i> Test Report</h1>
+        </header>
+        
+        <div class="score-summary">
+            <div class="score-card">
+                <h3><i class="fas fa-user-graduate"></i> Student</h3>
+                <div id="studentName">John Doe</div>
+                <div id="studentEmail" style="font-size: 0.9rem; opacity: 0.8;">johndoe@example.com</div>
+            </div>
+            
+            <div class="score-card">
+                <h3><i class="fas fa-book"></i> Lesson</h3>
+                <div id="lessonName">History 101</div>
+            </div>
+            
+            <div class="score-card">
+                <h3><i class="fas fa-star"></i> Your Score</h3>
+                <div class="score-value" id="overallScore">7</div>
+                <div class="score-total" id="scoreTotal">out of 8</div>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="section-title">
+                <i class="fas fa-list-ol"></i> Detailed Results
+            </div>
+            
+            <div id="reportContent">
+                <!-- Content will be filled dynamically -->
+                <div class="report-question-item">
+                    <h3>
+                        <span class="question-number">1</span>
+                        What is the capital of France?
+                    </h3>
+                    <ul class="options-list">
+                        <li class="option-item">
+                            <div class="option-mark">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="option-text">A) Berlin</div>
+                        </li>
+                        <li class="option-item correct user-answer">
+                            <div class="option-mark">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="option-text">B) Paris</div>
+                        </li>
+                        <li class="option-item">
+                            <div class="option-mark"></div>
+                            <div class="option-text">C) Madrid</div>
+                        </li>
+                        <li class="option-item">
+                            <div class="option-mark"></div>
+                            <div class="option-text">D) Rome</div>
+                        </li>
+                    </ul>
+                    <div class="feedback-box">
+                        <p>
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Correct Answer!</strong> - You selected the correct option.
+                        </p>
+                    </div>
+                    <div class="question-score correct">
+                        <i class="fas fa-check"></i>
+                        Score: 1 / 1
+                    </div>
+                </div>
+                
+                <div class="report-question-item">
+                    <h3>
+                        <span class="question-number">2</span>
+                        Which planet is known as the Red Planet?
+                    </h3>
+                    <ul class="options-list">
+                        <li class="option-item">
+                            <div class="option-mark"></div>
+                            <div class="option-text">A) Earth</div>
+                        </li>
+                        <li class="option-item correct">
+                            <div class="option-mark">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="option-text">B) Mars</div>
+                        </li>
+                        <li class="option-item">
+                            <div class="option-mark"></div>
+                            <div class="option-text">C) Jupiter</div>
+                        </li>
+                        <li class="option-item user-answer wrong">
+                            <div class="option-mark">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="option-text">D) Venus</div>
+                        </li>
+                    </ul>
+                    <div class="feedback-box">
+                        <p>
+                            <i class="fas fa-times-circle"></i>
+                            <strong>Incorrect Answer</strong> - The correct answer is Mars.
+                        </p>
+                    </div>
+                    <div class="question-score wrong">
+                        <i class="fas fa-times"></i>
+                        Score: 0 / 1
+                    </div>
+                </div>
+                
+                <div class="report-question-item">
+                    <h3>
+                        <span class="question-number">3</span>
+                        Describe the water cycle in three main steps.
+                    </h3>
+                    <div class="user-essay-answer">
+                        The water cycle involves three main stages: Evaporation, where water turns into vapor; Condensation, where vapor forms clouds; and Precipitation, where water falls back to Earth as rain or snow.
+                    </div>
+                    <div class="feedback-box">
+                        <p>
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Excellent Answer!</strong> - You provided a comprehensive response.
+                        </p>
+                    </div>
+                    <div class="question-score correct">
+                        <i class="fas fa-check"></i>
+                        Score: 1 / 1
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn-container">
+            <button class="btn-home" onclick="goHome()">
+                <i class="fas fa-home"></i> Back to Homepage
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Go to homepage function
+        function goHome() {
+            window.location.href = "index.html"; // You might want to change this to your homepage URL
+        }
+
+        // ------ New Theme Switching Code ------
+
+        // 1. Central function to apply colors
+        function applyTheme(themeColors) {
+            document.documentElement.style.setProperty('--primary-color', themeColors.primary);
+            document.documentElement.style.setProperty('--secondary-color', themeColors.secondary);
+            document.documentElement.style.setProperty('--accent-color', themeColors.accent);
+            document.documentElement.style.setProperty('--text-color', themeColors.text);
+            document.documentElement.style.setProperty('--card-bg', themeColors.cardBg);
+            document.documentElement.style.setProperty('--header-bg', themeColors.headerBg);
+            document.documentElement.style.setProperty('--score-bg', themeColors.scoreBg);
+        }
+
+        // 2. Algorithm to generate dark themes
+        function generateDarkTheme(primaryColor) {
+            const r = parseInt(primaryColor.slice(1, 3), 16);
+            const g = parseInt(primaryColor.slice(3, 5), 16);
+            const b = parseInt(primaryColor.slice(5, 7), 16);
+            
+            const secondaryColor = `rgb(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.7)})`;
+            const accentR = (r + 100) % 256;
+            const accentG = (g + 150) % 256;
+            const accentB = (b + 200) % 256;
+            const accentColor = `rgb(${accentR}, ${accentG}, ${accentB})`;
+
+            return {
+                primary: primaryColor,
+                secondary: secondaryColor,
+                accent: accentColor,
+                text: '#ffffff',
+                cardBg: 'rgba(255, 255, 255, 0.05)',
+                headerBg: 'rgba(0, 0, 0, 0.3)',
+                scoreBg: 'rgba(0, 0, 0, 0.4)'
+            };
+        }
+
+        // 3. Function to get light themes
+        function getLightTheme(element) {
+            const primary = element.getAttribute('data-primary');
+            const secondary = element.getAttribute('data-secondary');
+            const accent = element.getAttribute('data-accent');
+            const text = element.getAttribute('data-text');
+
+            return {
+                primary: primary,
+                secondary: secondary,
+                accent: accent,
+                text: text,
+                cardBg: 'rgba(255, 255, 255, 0.5)',
+                headerBg: 'rgba(255, 255, 255, 0.4)',
+                scoreBg: 'rgba(255, 255, 255, 0.3)'
+            };
+        }
+
+        // 4. Unified click handler
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove active class from all options
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+                
+                // Add active class to the clicked option
+                this.classList.add('active');
+                
+                const mode = this.getAttribute('data-mode');
+                let themeColors;
+
+                if (mode === 'dark') {
+                    const selectedColor = this.getAttribute('data-color');
+                    themeColors = generateDarkTheme(selectedColor);
+                } else { // mode === 'light'
+                    themeColors = getLightTheme(this);
+                }
+                
+                // Apply the new theme
+                applyTheme(themeColors);
+            });
+        });
+
+        // 5. Apply default theme on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const defaultTheme = generateDarkTheme('#1a2a6c');
+            applyTheme(defaultTheme);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <title>QUIZ Shazly</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function() {
+            emailjs.init("7vp8QHEsXGvFKskZm"); 
+        })();
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+    <style>
+        body {
+            background-color: #333;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        .screen { display: none; }
+        .active { display: block; }
+
+        .start-image {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            cursor: pointer;
+            margin-top: 50px;
+        }
+
+        .board {
+            background-image: url('BACKGROUND.JPG');
+            background-size: cover;
+            background-position: center;
+            width: 100%;
+            max-width: 1300px;
+            aspect-ratio: 16/9;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 50px 20px;
+            box-sizing: border-box;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .question-container {
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px 20px;
+            width: 90%;
+            max-width: 800px;
+            box-sizing: border-box;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .active-question { display: block; }
+
+        .question-container h2 {
+            color: #00FFFF;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            font-family: 'Patrick Hand', cursive;
+            text-transform: none;
+            direction: ltr;
+            line-height: 1.4;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .option {
+            display: block;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-weight: 500;
+            padding: 15px 20px;
+            margin: 15px auto;
+            width: 90%;
+            max-width: 500px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-size: 1.3rem;
+            text-align: left;
+            text-transform: none;
+        }
+
+        /* Styles for selected/correct/wrong options during the quiz */
+        .option.selected {
+            background: rgba(255, 255, 255, 0.3); /* Option chosen by user */
+            border: 2px solid #00FFFF; /* Highlight selected option */
+        }
+        .option.correct-quiz-highlight {
+            background: #28a745 !important; /* Correct option, highlighted during quiz */
+            animation: pop 0.5s ease;
+            border: 2px solid #28a745;
+        }
+        /* No specific highlight for wrong in quiz, to encourage finding correct */
+
+        .option:hover:not(.selected):not(.correct-quiz-highlight) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); } 
+            100% { transform: scale(1); }
+        }
+
+        input[type="text"], input[type="email"], textarea {
+            padding: 15px;
+            margin: 10px auto;
+            display: block;
+            width: 90%;
+            max-width: 500px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Roboto', sans-serif;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            resize: vertical; 
+            min-height: 100px; 
+        }
+
+        .buttons {
+            margin-top: 30px;
+        }
+
+        .buttons button {
+            padding: 15px 40px;
+            margin: 0 10px 20px;
+            background: linear-gradient(135deg, #00BFFF, #1E90FF);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .buttons button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #1E90FF, #00BFFF);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .buttons button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .valueInput {
+            background-color: white;
+        }
+        @media (max-width: 600px) {
+            .question-container h2,
+            .option,
+            input[type="text"],
+            input[type="email"],
+            textarea,
+            .buttons button {
+                font-size: 4vw !important;
+            }
+            .board { padding: 20px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="screen start-screen active">
+        <img src="start-image.jpg" class="start-image" alt="Click Start">
+    </div>
+
+    <div class="screen form-screen">
+        <h1>ENTER YOUR DETAILS</h1>
+        <div class="board">
+            <input type="text" id="studentName" placeholder="Your Name" required>
+            <input type="email" id="studentEmail" placeholder="Your Email" required>
+            <input type="text" id="lessonName" placeholder="Lesson Name" required>
+            <button id="toQuiz">NEXT</button>
+        </div>
+    </div>
+
+    <div class="screen quiz-screen">
+        <h1 id="quizTitle">QUIZ</h1>
+        <div class="board">
+
+            <div class="question-container" data-type="mcq">
+                <h2>Where did Muhammad ﷺ visit when he was six years old?</h2>
+                <div class="option" data-correct="false">A) Yemen</div>
+                <div class="option" data-correct="true">B) Yathrib (Medina)</div>
+                <div class="option" data-correct="false">C) Egypt</div>
+                <div class="option" data-correct="false">D) Baghdad</div>
+            </div>
+
+            <div class="question-container" data-type="mcq">
+                <h2>Who took care of Muhammad ﷺ after his mother passed away?</h2>
+                <div class="option" data-correct="false">A) His cousin</div>
+                <div class="option" data-correct="false">B) His friend</div>
+                <div class="option" data-correct="true">C) His grandfather ‘Abd al-Muttalib</div>
+                <div class="option" data-correct="false">D) A neighbor</div>
+            </div>
+
+            <div class="question-container" data-type="essay">
+                <h2>In your own words, describe the importance of honesty in Islam.</h2>
+                <textarea class="essay-answer" placeholder="Type your answer here..." rows="5"></textarea>
+            </div>
+
+            <div class="question-container" data-type="mcq">
+                <h2>Who raised Muhammad ﷺ after his grandfather died?</h2>
+                <div class="option" data-correct="true">A) Abu Talib</div>
+                <div class="option" data-correct="false">B) Bahira the Monk</div>
+                <div class="option" data-correct="false">C) Barakah</div>
+                <div class="option" data-correct="false">D) His uncle Hamza</div>
+            </div>
+
+            <div class="question-container" data-type="mcq">
+                <h2>What did Bahira see that amazed him?</h2>
+                <div class="option" data-correct="false">A) A rainbow</div>
+                <div class="option" data-correct="false">B) A big fire</div>
+                <div class="option" data-correct="true">C) A white cloud shading Muhammad ﷺ</div>
+                <div class="option" data-correct="false">D) A shooting star</div>
+            </div>
+
+            <div class="question-container" data-type="mcq">
+                <h2>What work did young Muhammad ﷺ do for his family?</h2>
+                <div class="option" data-correct="false">A) He cooked food</div>
+                <div class="option" data-correct="false">B) He traveled alone</div>
+                <div class="option" data-correct="true">C) He watched the sheep</div>
+                <div class="option" data-correct="false">D) He built houses</div>
+            </div>
+
+            <div class="question-container" data-type="essay">
+                <h2>List three benefits of reading the Quran daily.</h2>
+                <textarea class="essay-answer" placeholder="Type your answer here..." rows="5"></textarea>
+            </div>
+
+            <div class="question-container" data-type="mcq">
+                <h2>Why did Muhammad ﷺ not attend the wedding party?</h2>
+                <div class="option" data-correct="false">A) He got lost</div>
+                <div class="option" data-correct="true">B) He fell asleep by Allah’s will</div>
+                <div class="option" data-correct="false">C) He changed his mind</div>
+                <div class="option" data-correct="false">D) He went to play instead</div>
+            </div>
+
+            <div class="buttons">
+                <button id="prev">PREVIOUS</button>
+                <button id="next" disabled>NEXT</button>
+                <button id="submit" style="display:none;" disabled>SUBMIT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const animationsIn = ["animate__fadeIn", "animate__slideInUp", "animate__slideInDown", "animate__zoomIn", "animate__bounceIn", "animate__flipInX", "animate__flipInY", "animate__rotateIn", "animate__lightSpeedInRight", "animate__jackInTheBox"];
+        const hoverEffects = ["grow", "shrink", "pulse", "bounce", "wobble", "swing", "shake", "rotate", "float", "shadow-pop"];
+        
+        const startScreen = document.querySelector('.start-screen');
+        const formScreen = document.querySelector('.form-screen');
+        const quizScreen = document.querySelector('.quiz-screen');
+        const questions = document.querySelectorAll('.question-container');
+        const nextBtn = document.getElementById('next');
+        const prevBtn = document.getElementById('prev');
+        const submitBtn = document.getElementById('submit');
+        const quizTitle = document.getElementById('quizTitle');
+
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = Array(questions.length).fill(null);
+
+        // **هام**: قم بتغيير هذا إلى بريدك الإلكتروني الفعلي لاستقبال التقارير
+        const MY_EMAIL = "your_actual_email@example.com"; 
+
+        // تهيئة userAnswers بمجرد تحميل الصفحة
+        questions.forEach((q, idx) => {
+            if (q.dataset.type === 'mcq') {
+                userAnswers[idx] = { 
+                    type: 'mcq', 
+                    isAnswered: false, 
+                    isCorrect: false, 
+                    selectedOptionIndex: -1 
+                };
+            } else if (q.dataset.type === 'essay') {
+                userAnswers[idx] = { 
+                    type: 'essay', 
+                    isAnswered: false, 
+                    isCorrect: false,
+                    userEssayAnswer: '' 
+                };
+            }
+        });
+
+        // --- معالجة شاشات البداية والبيانات ---
+        document.querySelector('.start-image').onclick = () => {
+            startScreen.classList.remove('active');
+            formScreen.classList.add('active');
+        };
+
+        document.getElementById('toQuiz').onclick = () => {
+            const name = document.getElementById('studentName').value.trim();
+            const email = document.getElementById('studentEmail').value.trim();
+            const lesson = document.getElementById('lessonName').value.trim();
+
+            if (!name || !email || !lesson) { 
+                alert("Please fill all fields: Name, Email, and Lesson Name."); 
+                return; 
+            }
+
+            formScreen.classList.remove('active');
+            quizScreen.classList.add('active');
+            quizTitle.innerText = `${lesson} 📚 QUIZ`;
+            showQuestion(currentQuestion);
+        };
+
+        // --- وظيفة عرض السؤال ---
+        const showQuestion = (index) => {
+            questions.forEach(q => q.classList.remove('active-question', ...animationsIn));
+            
+            const anim = animationsIn[Math.floor(Math.random() * animationsIn.length)];
+            questions[index].classList.add('active-question', 'animate__animated', anim);
+            
+            prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+            nextBtn.style.display = index === questions.length - 1 ? 'none' : 'inline-block';
+            submitBtn.style.display = index === questions.length - 1 ? 'inline-block' : 'none';
+
+            updateNavigationButtons();
+
+            if (questions[index].dataset.type === 'mcq') {
+                const options = questions[index].querySelectorAll('.option');
+                options.forEach((option, optIdx) => {
+                    option.classList.remove('selected', 'correct-quiz-highlight');
+                    if (userAnswers[index].isAnswered && userAnswers[index].selectedOptionIndex === optIdx) {
+                        option.classList.add('selected');
+                        if (userAnswers[index].isCorrect) {
+                            option.classList.add('correct-quiz-highlight');
+                        }
+                    }
+                });
+            } else if (questions[index].dataset.type === 'essay') {
+                const essayInput = questions[index].querySelector('.essay-answer');
+                essayInput.value = userAnswers[index].userEssayAnswer || '';
+            }
+        };
+
+        // --- وظيفة تحديث أزرار التنقل (Next/Submit) ---
+        const updateNavigationButtons = () => {
+            const currentAnswerData = userAnswers[currentQuestion];
+
+            if (currentAnswerData && currentAnswerData.isAnswered) {
+                nextBtn.disabled = false;
+                submitBtn.disabled = false;
+            } else {
+                nextBtn.disabled = true;
+                submitBtn.disabled = true;
+            }
+        };
+
+        // --- أحداث النقر على أزرار التنقل ---
+        nextBtn.onclick = () => { 
+            if (currentQuestion < questions.length - 1) { 
+                currentQuestion++; 
+                showQuestion(currentQuestion); 
+            } 
+        };
+        prevBtn.onclick = () => { 
+            if (currentQuestion > 0) { 
+                currentQuestion--; 
+                showQuestion(currentQuestion); 
+            } 
+        };
+
+        // --- معالجة إجابات الأسئلة ---
+        questions.forEach((q, qIdx) => {
+            if (q.dataset.type === 'mcq') {
+                const options = q.querySelectorAll('.option');
+                options.forEach((option, optIdx) => {
+                    option.addEventListener('click', () => {
+                        options.forEach(o => o.classList.remove('selected', 'correct-quiz-highlight'));
+
+                        const isCorrectOption = option.dataset.correct === "true";
+                        option.classList.add('selected');
+
+                        if (isCorrectOption) {
+                            option.classList.add('correct-quiz-highlight');
+                        }
+
+                        const previousIsCorrect = userAnswers[qIdx].isCorrect;
+                        
+                        userAnswers[qIdx] = {
+                            type: 'mcq',
+                            isAnswered: true,
+                            isCorrect: isCorrectOption,
+                            selectedOptionIndex: optIdx
+                        };
+
+                        if (isCorrectOption && !previousIsCorrect) {
+                            score++;
+                        } else if (!isCorrectOption && previousIsCorrect) {
+                            score--;
+                        }
+
+                        updateNavigationButtons();
+                    });
+
+                    option.addEventListener('mouseenter', () => {
+                        if (!option.classList.contains('selected')) {
+                            const effect = hoverEffects[Math.floor(Math.random() * hoverEffects.length)];
+                            option.classList.add('animate__animated', `animate__${effect}`);
+                        }
+                    });
+                    option.addEventListener('mouseleave', () => { 
+                        if (!option.classList.contains('selected')) {
+                             option.className = 'option';
+                        }
+                    });
+                });
+            } else if (q.dataset.type === 'essay') {
+                const essayInput = q.querySelector('.essay-answer');
+                essayInput.addEventListener('input', () => {
+                    const answerText = essayInput.value.trim();
+                    const previousIsCorrect = userAnswers[qIdx].isCorrect;
+
+                    userAnswers[qIdx] = {
+                        type: 'essay',
+                        isAnswered: answerText !== '',
+                        isCorrect: answerText !== '',
+                        userEssayAnswer: answerText
+                    };
+
+                    if (answerText !== '' && !previousIsCorrect) {
+                        score++;
+                    } else if (answerText === '' && previousIsCorrect) {
+                        score--;
+                    }
+                    
+                    updateNavigationButtons();
+                });
+            }
+        });
+
+        // --- وظيفة تقديم الاختبار وعرض التقرير ---
+        submitBtn.onclick = () => {
+            const name = document.getElementById('studentName').value.trim();
+            const email = document.getElementById('studentEmail').value.trim();
+            const lesson = document.getElementById('lessonName').value.trim();
+
+            if (!name || !email || !lesson) { 
+                alert("Please fill all fields: Name, Email, and Lesson Name."); 
+                return; 
+            }
+            
+            // إخفاء شاشة الاختبار
+            quizScreen.classList.remove('active');
+
+            // بناء بيانات الأسئلة للتقرير
+            const questionsData = [];
+
+            questions.forEach((q, index) => {
+                const questionData = {
+                    question: q.querySelector('h2').innerText,
+                    type: q.dataset.type,
+                    isCorrect: userAnswers[index].isCorrect
+                };
+                
+                if (q.dataset.type === 'mcq') {
+                    const options = q.querySelectorAll('.option');
+                    questionData.options = Array.from(options).map(opt => ({
+                        text: opt.innerText,
+                        correct: opt.dataset.correct === "true"
+                    }));
+                    questionData.selectedOptionIndex = userAnswers[index].selectedOptionIndex;
+                } else {
+                    questionData.userEssayAnswer = userAnswers[index].userEssayAnswer;
+                }
+                
+                questionsData.push(questionData);
+            });
+
+            // حفظ جميع البيانات في localStorage
+            localStorage.setItem("questionsData", JSON.stringify(questionsData));
+            localStorage.setItem("studentName", name);
+            localStorage.setItem("studentEmail", email);
+            localStorage.setItem("lessonName", lesson);
+            localStorage.setItem("quizScore", score + " / " + questions.length);
+
+            // إرسال التقرير عبر EmailJS
+            emailjs.send("service_ctdnb2j", "template_j8ael3l", {
+                student_name: name,
+                student_email: email,
+                lesson_name: lesson,
+                score: `${score} / ${questions.length}`,
+                report_details: JSON.stringify(questionsData),
+                my_email: MY_EMAIL 
+            }).then(function(response) {
+               console.log('EmailJS SUCCESS!', response.status, response.text);
+            }, function(error) {
+               console.log('EmailJS FAILED...', error);
+               alert('Failed to send report. Please check your internet connection or EmailJS setup.');
+            });
+
+            // الانتقال إلى صفحة التقرير
+            window.location.href = "report.html";
+        };
+    </script>
+</body>
+</html>
